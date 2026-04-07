@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell.exe -Command \"where.exe npm; where.exe node\")"
+      "Bash(powershell.exe -Command \"where.exe npm; where.exe node\")",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Bash(cmd.exe /c \"dir C:\\\\Users\\\\dell\\\\AppData\\\\Roaming\\\\npm\\\\npm.cmd\")"
     ]
   }
 }

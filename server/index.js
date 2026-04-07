@@ -74,6 +74,24 @@ db.exec(`
   INSERT OR IGNORE INTO repair_counter (id, last_number) VALUES (1, 1000);
 `);
 
+// Auto-seed: create default users if none exist
+function autoSeed() {
+  const bcrypt = require('bcryptjs');
+  const count = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
+  if (count === 0) {
+    const users = [
+      { username: 'employee', password: 'arizu123',   role: 'employee', display_name: 'עובד חנות' },
+      { username: 'admin',    password: 'arizuadmin', role: 'admin',    display_name: 'מנהל' },
+    ];
+    const insert = db.prepare('INSERT OR IGNORE INTO users (username, password, role, display_name) VALUES (?, ?, ?, ?)');
+    for (const u of users) {
+      insert.run(u.username, bcrypt.hashSync(u.password, 10), u.role, u.display_name);
+    }
+    console.log('✅ משתמשי ברירת מחדל נוצרו אוטומטית');
+  }
+}
+autoSeed();
+
 // Make db available to routes
 app.locals.db = db;
 
