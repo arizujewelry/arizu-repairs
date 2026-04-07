@@ -243,7 +243,7 @@ export default function RepairsList() {
                     <th className="px-4 py-3 text-right font-semibold">לקוח</th>
                     <th className="px-4 py-3 text-right font-semibold">טלפון</th>
                     <th className="px-4 py-3 text-right font-semibold">דגם</th>
-                    <th className="px-4 py-3 text-right font-semibold">תאריך קבלה</th>
+                    <th className="px-4 py-3 text-right font-semibold">קבלת תיקון</th>
                     <th className="px-4 py-3 text-right font-semibold">תשלום</th>
                     <th className="px-4 py-3 text-right font-semibold">סטטוס</th>
                     <th className="px-4 py-3 text-right font-semibold">פעולות</th>
@@ -258,7 +258,7 @@ export default function RepairsList() {
                         <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{repair.customer_name}</td>
                         <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{repair.phone || '—'}</td>
                         <td className="px-4 py-3 text-gray-600 max-w-[140px] truncate">{repair.model || '—'}</td>
-                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(repair.received_date)}</td>
+                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(repair.intake_date)}</td>
                         <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate">{repair.payment || '—'}</td>
                         <td className="px-4 py-3">
                           <select
@@ -326,7 +326,7 @@ export default function RepairsList() {
                   </div>
                   {repair.model && <p className="text-sm text-gray-500 mb-1">📦 {repair.model}</p>}
                   {repair.phone && <p className="text-sm text-gray-500 mb-1">📞 {repair.phone}</p>}
-                  <p className="text-xs text-gray-400 mb-3">📅 {formatDate(repair.received_date)}{repair.payment ? ` · 💰 ${repair.payment}` : ''}</p>
+                  <p className="text-xs text-gray-400 mb-3">📅 {formatDate(repair.intake_date)}{repair.payment ? ` · 💰 ${repair.payment}` : ''}</p>
 
                   <div className="flex gap-2">
                     <button

@@ -6,6 +6,7 @@ export default function EditRepairModal({ repair, statuses, onClose, onSaved }) 
     customer_name:    repair.customer_name || '',
     phone:            repair.phone || '',
     email:            repair.email || '',
+    intake_date:      repair.intake_date || '',
     received_date:    repair.received_date || '',
     model:            repair.model || '',
     purchase_place:   repair.purchase_place || '',
@@ -79,8 +80,12 @@ export default function EditRepairModal({ repair, statuses, onClose, onSaved }) 
               <input name="email" value={form.email} onChange={handleChange} type="email" className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>תאריך קבלה</label>
-              <input name="received_date" value={form.received_date} onChange={handleChange} type="date" className={inputCls} />
+              <label className={labelCls}>תאריך קבלת תיקון</label>
+              <input name="intake_date" value={form.intake_date} onChange={handleChange} type="date" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>תאריך רכישה</label>
+              <input name="received_date" value={form.received_date} onChange={handleChange} type="date" className={inputCls} placeholder="ללא תאריך" />
             </div>
             <div>
               <label className={labelCls}>סטטוס</label>

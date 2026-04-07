@@ -10,6 +10,7 @@ export default function NewRepair() {
     customer_name:    '',
     phone:            '',
     email:            '',
+    intake_date:      today,
     received_date:    today,
     model:            '',
     purchase_place:   '',
@@ -45,7 +46,7 @@ export default function NewRepair() {
     setNoDate(false);
     setForm({
       customer_name: '', phone: '', email: '',
-      received_date: today, model: '', purchase_place: '',
+      intake_date: today, received_date: today, model: '', purchase_place: '',
       fault_description: '', payment: '', send_email: false,
     });
     setImageFile(null);
@@ -172,7 +173,17 @@ export default function NewRepair() {
           <h3 className="text-sm font-semibold text-brand-600 uppercase tracking-wide mb-3">פרטי מוצר</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>תאריך קבלה</label>
+              <label className={labelCls}>תאריך קבלת תיקון</label>
+              <input
+                name="intake_date"
+                value={form.intake_date}
+                onChange={handleChange}
+                type="date"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>תאריך רכישה</label>
               <input
                 name="received_date"
                 value={noDate ? '' : form.received_date}
@@ -192,7 +203,7 @@ export default function NewRepair() {
                   }}
                   className="w-4 h-4 rounded accent-brand-500"
                 />
-                <span className="text-xs text-gray-500">ללא תאריך / אין קבלה</span>
+                <span className="text-xs text-gray-500">ללא תאריך רכישה / אין קבלה</span>
               </label>
             </div>
             <div>
@@ -205,7 +216,7 @@ export default function NewRepair() {
                 className={inputCls}
               />
             </div>
-            <div className="sm:col-span-2">
+            <div>
               <label className={labelCls}>מקום רכישה</label>
               <input
                 name="purchase_place"

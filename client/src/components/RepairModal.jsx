@@ -106,7 +106,8 @@ export default function RepairModal({ repair, statuses, onClose, onUpdated }) {
             <dl>
               <Field label="טלפון" value={repair.phone} />
               <Field label="מייל לקוח" value={repair.email} />
-              <Field label="תאריך קבלה" value={formatDate(repair.received_date)} />
+              <Field label="תאריך קבלת תיקון" value={formatDate(repair.intake_date)} />
+              {repair.received_date && <Field label="תאריך רכישה" value={formatDate(repair.received_date)} />}
               <Field label="דגם / מוצר" value={repair.model} />
               <Field label="מקום רכישה" value={repair.purchase_place} />
               <Field label="תיאור תקלה" value={repair.fault_description} />

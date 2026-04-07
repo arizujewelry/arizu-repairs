@@ -102,9 +102,14 @@ function buildEmailHtml(repair, db) {
                   <td style="padding:10px 12px;background:#fff;border-bottom:1px solid #f0e0d8;color:#333;">${repair.fault_description}</td>
                 </tr>` : ''}
                 <tr>
-                  <td style="padding:10px 12px;background:#fdf6f3;border-bottom:1px solid #f0e0d8;font-weight:bold;color:#B85C38;">תאריך קבלה</td>
-                  <td style="padding:10px 12px;background:#fdf6f3;border-bottom:1px solid #f0e0d8;color:#333;">${formatDate(repair.received_date)}</td>
+                  <td style="padding:10px 12px;background:#fdf6f3;border-bottom:1px solid #f0e0d8;font-weight:bold;color:#B85C38;">תאריך קבלת תיקון</td>
+                  <td style="padding:10px 12px;background:#fdf6f3;border-bottom:1px solid #f0e0d8;color:#333;">${formatDate(repair.intake_date)}</td>
                 </tr>
+                ${repair.received_date ? `
+                <tr>
+                  <td style="padding:10px 12px;background:#fff;border-bottom:1px solid #f0e0d8;font-weight:bold;color:#B85C38;">תאריך רכישה</td>
+                  <td style="padding:10px 12px;background:#fff;border-bottom:1px solid #f0e0d8;color:#333;">${formatDate(repair.received_date)}</td>
+                </tr>` : ''}
                 ${repair.payment ? `
                 <tr>
                   <td style="padding:10px 12px;background:#fff;border-bottom:1px solid #f0e0d8;font-weight:bold;color:#B85C38;">תשלום</td>
@@ -214,7 +219,8 @@ router.get('/export', authenticateToken, (req, res) => {
     'שם לקוח': r.customer_name,
     'טלפון': r.phone || '',
     'מייל': r.email || '',
-    'תאריך קבלה': formatDate(r.received_date),
+    'תאריך קבלת תיקון': formatDate(r.intake_date),
+    'תאריך רכישה': formatDate(r.received_date),
     'דגם / מוצר': r.model || '',
     'מקום רכישה': r.purchase_place || '',
     'תיאור תקלה': r.fault_description || '',
@@ -283,7 +289,7 @@ router.get('/:id', authenticateToken, (req, res) => {
 router.post('/', authenticateToken, upload.single('image'), (req, res) => {
   const db = req.app.locals.db;
   const {
-    customer_name, phone, email, received_date, model,
+    customer_name, phone, email, received_date, intake_date, model,
     purchase_place, fault_description, payment, send_email
   } = req.body;
 
@@ -302,9 +308,9 @@ router.post('/', authenticateToken, upload.single('image'), (req, res) => {
 
   try {
     const stmt = db.prepare(`
-      INSERT INTO repairs (repair_number, customer_name, phone, email, received_date, model,
+      INSERT INTO repairs (repair_number, customer_name, phone, email, received_date, intake_date, model,
         purchase_place, fault_description, payment, image_path, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     `);
 
     const result = stmt.run(
@@ -313,6 +319,7 @@ router.post('/', authenticateToken, upload.single('image'), (req, res) => {
       phone || null,
       email || null,
       received_date || null,
+      intake_date || today,
       model || null,
       purchase_place || null,
       fault_description || null,
@@ -361,7 +368,7 @@ router.put('/:id', authenticateToken, upload.single('image'), (req, res) => {
   if (!repair) return res.status(404).json({ error: 'תיקון לא נמצא' });
 
   const {
-    customer_name, phone, email, received_date, model,
+    customer_name, phone, email, received_date, intake_date, model,
     purchase_place, fault_description, payment, status
   } = req.body;
 
@@ -369,7 +376,8 @@ router.put('/:id', authenticateToken, upload.single('image'), (req, res) => {
     customer_name: customer_name?.trim() || repair.customer_name,
     phone: phone !== undefined ? phone : repair.phone,
     email: email !== undefined ? email : repair.email,
-    received_date: received_date || repair.received_date,
+    received_date: received_date !== undefined ? (received_date || null) : repair.received_date,
+    intake_date: intake_date || repair.intake_date,
     model: model !== undefined ? model : repair.model,
     purchase_place: purchase_place !== undefined ? purchase_place : repair.purchase_place,
     fault_description: fault_description !== undefined ? fault_description : repair.fault_description,
@@ -382,7 +390,8 @@ router.put('/:id', authenticateToken, upload.single('image'), (req, res) => {
     customer_name: 'שם לקוח',
     phone: 'טלפון',
     email: 'מייל',
-    received_date: 'תאריך קבלה',
+    received_date: 'תאריך רכישה',
+    intake_date: 'תאריך קבלת תיקון',
     model: 'דגם',
     purchase_place: 'מקום רכישה',
     fault_description: 'תיאור תקלה',
@@ -412,13 +421,13 @@ router.put('/:id', authenticateToken, upload.single('image'), (req, res) => {
 
   db.prepare(`
     UPDATE repairs SET
-      customer_name=?, phone=?, email=?, received_date=?, model=?,
+      customer_name=?, phone=?, email=?, received_date=?, intake_date=?, model=?,
       purchase_place=?, fault_description=?, payment=?, status=?, image_path=?,
       updated_at=datetime('now','localtime')
     WHERE id=?
   `).run(
     fields.customer_name, fields.phone, fields.email, fields.received_date,
-    fields.model, fields.purchase_place, fields.fault_description,
+    fields.intake_date, fields.model, fields.purchase_place, fields.fault_description,
     fields.payment, fields.status, fields.image_path, repair.id
   );
 

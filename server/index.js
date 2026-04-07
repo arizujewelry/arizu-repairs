@@ -74,6 +74,14 @@ db.exec(`
   INSERT OR IGNORE INTO repair_counter (id, last_number) VALUES (1, 1000);
 `);
 
+// Migrations — add new columns if not exist
+const migrations = [
+  `ALTER TABLE repairs ADD COLUMN intake_date TEXT`,
+];
+for (const sql of migrations) {
+  try { db.exec(sql); } catch(e) { /* column already exists */ }
+}
+
 // Auto-seed: create default users if none exist
 function autoSeed() {
   const bcrypt = require('bcryptjs');
