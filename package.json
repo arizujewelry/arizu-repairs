@@ -1,0 +1,17 @@
+{
+  "name": "arizu-jewelry",
+  "version": "1.0.0",
+  "description": "Arizu Jewelry - Repair Management System",
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "build": "npm install --prefix client && npm run build --prefix client",
+    "start": "npm start --prefix server",
+    "seed": "npm run seed --prefix server",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "postinstall": "npm install --prefix server"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
