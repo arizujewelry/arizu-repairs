@@ -125,20 +125,41 @@ app.get('/api/health', (req, res) => {
 });
 
 // In production: serve the built React app
-const clientBuild = path.join(__dirname, '..', 'client', 'dist');
-if (fs.existsSync(clientBuild)) {
+// Try multiple possible paths for the client build
+const possibleClientPaths = [
+  path.join(__dirname, '..', 'client', 'dist'),
+  path.join(process.cwd(), 'client', 'dist'),
+  path.join(__dirname, 'public'),
+];
+
+let clientBuild = null;
+for (const p of possibleClientPaths) {
+  if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
+    clientBuild = p;
+    break;
+  }
+}
+
+if (clientBuild) {
+  console.log(`✅ Serving React app from: ${clientBuild}`);
   app.use(express.static(clientBuild));
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
       res.sendFile(path.join(clientBuild, 'index.html'));
     }
   });
+} else {
+  console.log('⚠️  React build not found. Searched:', possibleClientPaths);
+  app.get('/', (req, res) => {
+    res.json({ status: 'ok', message: 'API is running. React build not found.' });
+  });
 }
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🏪 Arizu Jewelry Server running on port ${PORT}`);
   console.log(`📦 Database: ${path.join(dataDir, 'repairs.db')}`);
   console.log(`🖼️  Uploads: ${uploadsDir}`);
-  if (fs.existsSync(clientBuild)) console.log(`🌐 Serving React app from ${clientBuild}`);
+  console.log(`🌐 Client build path: ${clientBuild}`);
+  console.log(`🌐 Client build exists: ${fs.existsSync(clientBuild)}`);
   console.log('');
 });
