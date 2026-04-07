@@ -5,6 +5,7 @@ import Toast from '../components/Toast';
 export default function NewRepair() {
   const today = new Date().toISOString().split('T')[0];
 
+  const [noDate, setNoDate] = useState(false);
   const [form, setForm] = useState({
     customer_name:    '',
     phone:            '',
@@ -41,6 +42,7 @@ export default function NewRepair() {
   };
 
   const resetForm = () => {
+    setNoDate(false);
     setForm({
       customer_name: '', phone: '', email: '',
       received_date: today, model: '', purchase_place: '',
@@ -173,11 +175,25 @@ export default function NewRepair() {
               <label className={labelCls}>תאריך קבלה</label>
               <input
                 name="received_date"
-                value={form.received_date}
+                value={noDate ? '' : form.received_date}
                 onChange={handleChange}
                 type="date"
                 className={inputCls}
+                disabled={noDate}
               />
+              <label className="flex items-center gap-2 mt-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={noDate}
+                  onChange={e => {
+                    setNoDate(e.target.checked);
+                    if (e.target.checked) setForm(p => ({ ...p, received_date: '' }));
+                    else setForm(p => ({ ...p, received_date: today }));
+                  }}
+                  className="w-4 h-4 rounded accent-brand-500"
+                />
+                <span className="text-xs text-gray-500">ללא תאריך / אין קבלה</span>
+              </label>
             </div>
             <div>
               <label className={labelCls}>דגם / שם המוצר</label>

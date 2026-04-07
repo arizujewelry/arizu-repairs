@@ -114,7 +114,10 @@ export default function RepairsList() {
   };
   const hasFilters = search || filterStatus || dateFrom || dateTo;
 
-  const formatDate = d => d ? new Date(d).toLocaleDateString('he-IL') : '—';
+  const formatDate = d => {
+    if (!d) return <span className="text-gray-300 text-xs">ללא תאריך</span>;
+    return new Date(d).toLocaleDateString('he-IL');
+  };
 
   const openViewModal = async (repair) => {
     try {
@@ -243,7 +246,7 @@ export default function RepairsList() {
                     <th className="px-4 py-3 text-right font-semibold">לקוח</th>
                     <th className="px-4 py-3 text-right font-semibold">טלפון</th>
                     <th className="px-4 py-3 text-right font-semibold">דגם</th>
-                    <th className="px-4 py-3 text-right font-semibold">תאריך</th>
+                    <th className="px-4 py-3 text-right font-semibold">תאריך קבלה</th>
                     <th className="px-4 py-3 text-right font-semibold">תשלום</th>
                     <th className="px-4 py-3 text-right font-semibold">סטטוס</th>
                     <th className="px-4 py-3 text-right font-semibold">פעולות</th>
