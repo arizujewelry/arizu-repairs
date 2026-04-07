@@ -9,8 +9,9 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Ensure directories exist
+// dataDir is mounted as a Railway Volume — persists across deployments
 const dataDir = path.join(__dirname, 'data');
-const uploadsDir = path.join(__dirname, 'uploads');
+const uploadsDir = path.join(dataDir, 'uploads'); // inside the volume
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -117,7 +118,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(uploadsDir)); // serves /app/server/data/uploads
 
 // Routes
 const authRoutes = require('./routes/auth');

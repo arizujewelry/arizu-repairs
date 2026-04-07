@@ -13,7 +13,7 @@ const FROM_NAME = process.env.FROM_NAME || 'אריזו תכשיטים';
 // Multer config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '..', 'uploads');
+    const dir = path.join(__dirname, '..', 'data', 'uploads');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
