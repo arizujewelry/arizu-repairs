@@ -159,7 +159,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🏪 Arizu Jewelry Server running on port ${PORT}`);
   console.log(`📦 Database: ${path.join(dataDir, 'repairs.db')}`);
   console.log(`🖼️  Uploads: ${uploadsDir}`);
-  console.log(`🌐 Client build path: ${clientBuild}`);
-  console.log(`🌐 Client build exists: ${fs.existsSync(clientBuild)}`);
+  console.log(`🌐 Client build: ${clientBuild || 'NOT FOUND'}`);
   console.log('');
 });

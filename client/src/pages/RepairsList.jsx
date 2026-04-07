@@ -114,10 +114,7 @@ export default function RepairsList() {
   };
   const hasFilters = search || filterStatus || dateFrom || dateTo;
 
-  const formatDate = d => {
-    if (!d) return <span className="text-gray-300 text-xs">ללא תאריך</span>;
-    return new Date(d).toLocaleDateString('he-IL');
-  };
+  const formatDate = d => d ? new Date(d).toLocaleDateString('he-IL') : 'ללא תאריך';
 
   const openViewModal = async (repair) => {
     try {

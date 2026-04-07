@@ -312,7 +312,7 @@ router.post('/', authenticateToken, upload.single('image'), (req, res) => {
       customer_name.trim(),
       phone || null,
       email || null,
-      received_date || today,
+      received_date || null,
       model || null,
       purchase_place || null,
       fault_description || null,
