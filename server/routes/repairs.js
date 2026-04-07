@@ -3,12 +3,23 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 const { authenticateToken } = require('../middleware/auth');
 const XLSX = require('xlsx');
 
-const FROM_EMAIL = process.env.FROM_EMAIL || 'INFO@ARIZU.CO.IL';
-const FROM_NAME = process.env.FROM_NAME || 'אריזו תכשיטים';
+const FROM_EMAIL = process.env.GMAIL_USER || 'info@arizu.co.il';
+const FROM_NAME  = process.env.FROM_NAME  || 'אריזו תכשיטים';
+
+function getTransporter() {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return null;
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+}
 
 // Multer config
 const storage = multer.diskStorage({
@@ -37,11 +48,6 @@ const upload = multer({
   }
 });
 
-function getResend() {
-  if (!process.env.RESEND_API_KEY) return null;
-  return new Resend(process.env.RESEND_API_KEY);
-}
-
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -60,6 +66,88 @@ function statusLabel(status, db) {
   if (defaults[status]) return defaults[status];
   const custom = db.prepare('SELECT label FROM custom_statuses WHERE key = ?').get(status);
   return custom ? custom.label : status;
+}
+
+async function sendEmail({ to, subject, html }) {
+  const transporter = getTransporter();
+  if (!transporter) return { ok: false, error: 'מפתח Gmail לא מוגדר בשרת' };
+  try {
+    await transporter.sendMail({ from: `"${FROM_NAME}" <${FROM_EMAIL}>`, to, subject, html });
+    return { ok: true };
+  } catch (err) {
+    console.error('Email error:', err.message);
+    return { ok: false, error: err.message };
+  }
+}
+
+function buildIntakeEmailHtml(repair) {
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;">
+    <tr><td align="center">
+      <table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
+        <tr><td style="background:#B85C38;padding:28px 40px;text-align:center;">
+          <h1 style="color:#fff;margin:0;font-size:26px;letter-spacing:2px;">ARIZU</h1>
+          <p style="color:#f5e6df;margin:5px 0 0;font-size:13px;">תכשיטים ותיקונים</p>
+        </td></tr>
+        <tr><td style="padding:32px 40px;">
+          <h2 style="color:#B85C38;margin:0 0 6px;font-size:19px;">קיבלנו את המוצר שלך לתיקון!</h2>
+          <p style="color:#555;margin:0 0 22px;font-size:14px;">שלום ${repair.customer_name}, המוצר שלך התקבל ונרשם במערכת.</p>
+          <div style="background:#fdf6f3;border:2px solid #B85C38;border-radius:10px;padding:20px;text-align:center;margin-bottom:22px;">
+            <p style="color:#B85C38;font-size:13px;margin:0 0 6px;font-weight:bold;">מספר תיקון שלך</p>
+            <p style="color:#B85C38;font-size:32px;font-weight:bold;margin:0;letter-spacing:2px;">${repair.repair_number}</p>
+          </div>
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+            ${repair.model ? `<tr><td style="padding:9px 12px;background:#fdf6f3;border-bottom:1px solid #f0e0d8;font-weight:bold;color:#B85C38;width:40%;">דגם / מוצר</td><td style="padding:9px 12px;background:#fdf6f3;border-bottom:1px solid #f0e0d8;color:#333;">${repair.model}</td></tr>` : ''}
+            ${repair.fault_description ? `<tr><td style="padding:9px 12px;background:#fff;border-bottom:1px solid #f0e0d8;font-weight:bold;color:#B85C38;">תיאור תקלה</td><td style="padding:9px 12px;background:#fff;border-bottom:1px solid #f0e0d8;color:#333;">${repair.fault_description}</td></tr>` : ''}
+            <tr><td style="padding:9px 12px;background:#fdf6f3;font-weight:bold;color:#B85C38;">תאריך קבלה</td><td style="padding:9px 12px;background:#fdf6f3;color:#333;">${formatDate(repair.intake_date)}</td></tr>
+          </table>
+          <p style="color:#888;font-size:13px;margin:20px 0 0;line-height:1.6;">נעדכן אותך כשהמוצר יהיה מוכן לאיסוף.<br>לשאלות ניתן ליצור קשר עם החנות.<br>תודה שבחרת באריזו תכשיטים!</p>
+        </td></tr>
+        <tr><td style="background:#f9f0ec;padding:14px 40px;text-align:center;border-top:1px solid #f0e0d8;">
+          <p style="color:#B85C38;font-size:12px;margin:0;">© ARIZU Jewelry — info@arizu.co.il</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+function buildReadyEmailHtml(repair) {
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;">
+    <tr><td align="center">
+      <table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
+        <tr><td style="background:#B85C38;padding:28px 40px;text-align:center;">
+          <h1 style="color:#fff;margin:0;font-size:26px;letter-spacing:2px;">ARIZU</h1>
+          <p style="color:#f5e6df;margin:5px 0 0;font-size:13px;">תכשיטים ותיקונים</p>
+        </td></tr>
+        <tr><td style="padding:32px 40px;text-align:center;">
+          <div style="font-size:52px;margin-bottom:12px;">✅</div>
+          <h2 style="color:#B85C38;margin:0 0 8px;font-size:22px;">המוצר שלך מוכן לאיסוף!</h2>
+          <p style="color:#555;margin:0 0 22px;font-size:14px;">שלום ${repair.customer_name}, התיקון הושלם ומחכה לך בחנות.</p>
+          <div style="background:#fdf6f3;border:2px solid #B85C38;border-radius:10px;padding:18px;margin-bottom:22px;">
+            <p style="color:#B85C38;font-size:13px;margin:0 0 4px;font-weight:bold;">מספר תיקון</p>
+            <p style="color:#B85C38;font-size:28px;font-weight:bold;margin:0;">${repair.repair_number}</p>
+          </div>
+          ${repair.model ? `<p style="color:#666;font-size:14px;margin:0 0 6px;">מוצר: <strong>${repair.model}</strong></p>` : ''}
+          ${repair.payment ? `<p style="color:#666;font-size:14px;margin:0 0 6px;">תשלום: <strong>${repair.payment}</strong></p>` : ''}
+          <p style="color:#888;font-size:13px;margin:20px 0 0;line-height:1.6;">ניתן לאסוף את המוצר בשעות פעילות החנות.<br>תודה שבחרת באריזו תכשיטים!</p>
+        </td></tr>
+        <tr><td style="background:#f9f0ec;padding:14px 40px;text-align:center;border-top:1px solid #f0e0d8;">
+          <p style="color:#B85C38;font-size:12px;margin:0;">© ARIZU Jewelry — info@arizu.co.il</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
 }
 
 function buildEmailHtml(repair, db) {
@@ -286,7 +374,7 @@ router.get('/:id', authenticateToken, (req, res) => {
 });
 
 // POST /api/repairs - create new repair
-router.post('/', authenticateToken, upload.single('image'), (req, res) => {
+router.post('/', authenticateToken, upload.single('image'), async (req, res) => {
   const db = req.app.locals.db;
   const {
     customer_name, phone, email, received_date, intake_date, model,
@@ -335,22 +423,17 @@ router.post('/', authenticateToken, upload.single('image'), (req, res) => {
       VALUES (?, 'סטטוס', NULL, 'ממתין לטיפול', ?)
     `).run(repair.id, req.user.username);
 
-    // Send email if requested
+    // Send intake confirmation email if requested
     let emailSent = false;
     let emailError = null;
     if (send_email === 'true' && email) {
-      const resend = getResend();
-      if (resend) {
-        resend.emails.send({
-          from: `${FROM_NAME} <${FROM_EMAIL}>`,
-          to: email,
-          subject: `קבלת תיקון אריזו — מספר ${repair_number}`,
-          html: buildEmailHtml(repair, db),
-        }).then(() => {}).catch(err => console.error('Email error:', err));
-        emailSent = true;
-      } else {
-        emailError = 'מפתח Resend לא מוגדר בשרת';
-      }
+      const result = await sendEmail({
+        to: email,
+        subject: `קבלת תיקון אריזו — מספר ${repair_number}`,
+        html: buildIntakeEmailHtml(repair),
+      });
+      emailSent = result.ok;
+      if (!result.ok) emailError = result.error;
     }
 
     res.status(201).json({ repair, email_sent: emailSent, email_error: emailError });
@@ -433,6 +516,16 @@ router.put('/:id', authenticateToken, upload.single('image'), (req, res) => {
 
   const updated = db.prepare('SELECT * FROM repairs WHERE id = ?').get(repair.id);
   const history = db.prepare('SELECT * FROM repair_history WHERE repair_id = ? ORDER BY changed_at DESC').all(repair.id);
+
+  // Auto-send "ready for pickup" email when status changes to 'ready'
+  if (status === 'ready' && repair.status !== 'ready' && updated.email) {
+    sendEmail({
+      to: updated.email,
+      subject: `המוצר שלך מוכן לאיסוף — אריזו תכשיטים`,
+      html: buildReadyEmailHtml(updated),
+    }).catch(err => console.error('Ready email error:', err));
+  }
+
   res.json({ ...updated, history });
 });
 
@@ -443,14 +536,14 @@ router.post('/:id/send-email', authenticateToken, async (req, res) => {
   if (!repair) return res.status(404).json({ error: 'תיקון לא נמצא' });
   if (!repair.email) return res.status(400).json({ error: 'אין כתובת מייל ללקוח זה' });
 
-  const resend = getResend();
-  if (!resend) {
-    return res.status(503).json({ error: 'שירות המייל אינו מוגדר. הוסף RESEND_API_KEY לקובץ .env' });
+  const transporter = getTransporter();
+  if (!transporter) {
+    return res.status(503).json({ error: 'שירות המייל אינו מוגדר. הוסף GMAIL_USER ו-GMAIL_APP_PASSWORD לרכבת' });
   }
 
   try {
-    await resend.emails.send({
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+    await transporter.sendMail({
+      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
       to: repair.email,
       subject: `עדכון תיקון אריזו — מספר ${repair.repair_number}`,
       html: buildEmailHtml(repair, db),
