@@ -82,30 +82,41 @@ function buildIntakeEmailHtml(repair) {
   return `
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>
+  @media only screen and (max-width:600px){
+    .wrap{width:100%!important;border-radius:0!important;}
+    .pad{padding:20px 16px!important;}
+    .hpad{padding:20px 16px!important;}
+    .num{font-size:26px!important;}
+  }
+</style>
+</head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;">
-    <tr><td align="center">
-      <table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
-        <tr><td style="background:#B85C38;padding:28px 40px;text-align:center;">
-          <h1 style="color:#fff;margin:0;font-size:26px;letter-spacing:2px;">ARIZU</h1>
-          <p style="color:#f5e6df;margin:5px 0 0;font-size:13px;">תכשיטים ותיקונים</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:20px 0;">
+    <tr><td align="center" style="padding:0 8px;">
+      <table class="wrap" width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);width:100%;max-width:560px;">
+        <tr><td class="hpad" style="background:#B85C38;padding:24px 32px;text-align:center;">
+          <h1 style="color:#fff;margin:0;font-size:24px;letter-spacing:2px;">ARIZU</h1>
+          <p style="color:#f5e6df;margin:4px 0 0;font-size:13px;">תכשיטים ותיקונים</p>
         </td></tr>
-        <tr><td style="padding:32px 40px;">
-          <h2 style="color:#B85C38;margin:0 0 6px;font-size:19px;">קיבלנו את המוצר שלך לתיקון!</h2>
-          <p style="color:#555;margin:0 0 22px;font-size:14px;">שלום ${repair.customer_name}, המוצר שלך התקבל ונרשם במערכת.</p>
-          <div style="background:#fdf6f3;border:2px solid #B85C38;border-radius:10px;padding:20px;text-align:center;margin-bottom:22px;">
-            <p style="color:#B85C38;font-size:13px;margin:0 0 6px;font-weight:bold;">מספר תיקון שלך</p>
-            <p style="color:#B85C38;font-size:32px;font-weight:bold;margin:0;letter-spacing:2px;">${repair.repair_number}</p>
+        <tr><td class="pad" style="padding:28px 32px;">
+          <h2 style="color:#B85C38;margin:0 0 6px;font-size:18px;">קיבלנו את המוצר שלך לתיקון!</h2>
+          <p style="color:#555;margin:0 0 20px;font-size:14px;line-height:1.5;">שלום ${repair.customer_name}, המוצר שלך התקבל ונרשם במערכת.</p>
+          <div style="background:#fdf6f3;border:2px solid #B85C38;border-radius:10px;padding:16px;text-align:center;margin-bottom:20px;">
+            <p style="color:#B85C38;font-size:12px;margin:0 0 4px;font-weight:bold;">מספר תיקון שלך</p>
+            <p class="num" style="color:#B85C38;font-size:30px;font-weight:bold;margin:0;letter-spacing:2px;">${repair.repair_number}</p>
           </div>
-          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-            ${repair.model ? `<tr><td style="padding:9px 12px;background:#fdf6f3;border-bottom:1px solid #f0e0d8;font-weight:bold;color:#B85C38;width:40%;">דגם / מוצר</td><td style="padding:9px 12px;background:#fdf6f3;border-bottom:1px solid #f0e0d8;color:#333;">${repair.model}</td></tr>` : ''}
-            ${repair.fault_description ? `<tr><td style="padding:9px 12px;background:#fff;border-bottom:1px solid #f0e0d8;font-weight:bold;color:#B85C38;">תיאור תקלה</td><td style="padding:9px 12px;background:#fff;border-bottom:1px solid #f0e0d8;color:#333;">${repair.fault_description}</td></tr>` : ''}
-            <tr><td style="padding:9px 12px;background:#fdf6f3;font-weight:bold;color:#B85C38;">תאריך קבלה</td><td style="padding:9px 12px;background:#fdf6f3;color:#333;">${formatDate(repair.intake_date)}</td></tr>
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px;">
+            ${repair.model ? `<tr><td style="padding:8px 10px;background:#fdf6f3;border-bottom:1px solid #f0e0d8;font-weight:bold;color:#B85C38;width:38%;">דגם / מוצר</td><td style="padding:8px 10px;background:#fdf6f3;border-bottom:1px solid #f0e0d8;color:#333;">${repair.model}</td></tr>` : ''}
+            ${repair.fault_description ? `<tr><td style="padding:8px 10px;background:#fff;border-bottom:1px solid #f0e0d8;font-weight:bold;color:#B85C38;">תיאור תקלה</td><td style="padding:8px 10px;background:#fff;border-bottom:1px solid #f0e0d8;color:#333;">${repair.fault_description}</td></tr>` : ''}
+            <tr><td style="padding:8px 10px;background:#fdf6f3;font-weight:bold;color:#B85C38;">תאריך קבלה</td><td style="padding:8px 10px;background:#fdf6f3;color:#333;">${formatDate(repair.intake_date)}</td></tr>
           </table>
-          <p style="color:#888;font-size:13px;margin:20px 0 0;line-height:1.6;">נעדכן אותך כשהמוצר יהיה מוכן לאיסוף.<br>לשאלות ניתן ליצור קשר עם החנות.<br>תודה שבחרת באריזו תכשיטים!</p>
+          <p style="color:#888;font-size:13px;margin:18px 0 0;line-height:1.7;">נעדכן אותך כשהמוצר יהיה מוכן לאיסוף.<br>לשאלות ניתן ליצור קשר עם החנות.<br>תודה שבחרת באריזו תכשיטים!</p>
         </td></tr>
-        <tr><td style="background:#f9f0ec;padding:14px 40px;text-align:center;border-top:1px solid #f0e0d8;">
+        <tr><td style="background:#f9f0ec;padding:12px 32px;text-align:center;border-top:1px solid #f0e0d8;">
           <p style="color:#B85C38;font-size:12px;margin:0;">© ARIZU Jewelry — info@arizu.co.il</p>
         </td></tr>
       </table>
@@ -118,28 +129,40 @@ function buildReadyEmailHtml(repair) {
   return `
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>
+  @media only screen and (max-width:600px){
+    .wrap{width:100%!important;border-radius:0!important;}
+    .pad{padding:20px 16px!important;}
+    .hpad{padding:20px 16px!important;}
+    .num{font-size:24px!important;}
+    .icon{font-size:40px!important;}
+  }
+</style>
+</head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;direction:rtl;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:30px 0;">
-    <tr><td align="center">
-      <table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);">
-        <tr><td style="background:#B85C38;padding:28px 40px;text-align:center;">
-          <h1 style="color:#fff;margin:0;font-size:26px;letter-spacing:2px;">ARIZU</h1>
-          <p style="color:#f5e6df;margin:5px 0 0;font-size:13px;">תכשיטים ותיקונים</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:20px 0;">
+    <tr><td align="center" style="padding:0 8px;">
+      <table class="wrap" width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);width:100%;max-width:560px;">
+        <tr><td class="hpad" style="background:#B85C38;padding:24px 32px;text-align:center;">
+          <h1 style="color:#fff;margin:0;font-size:24px;letter-spacing:2px;">ARIZU</h1>
+          <p style="color:#f5e6df;margin:4px 0 0;font-size:13px;">תכשיטים ותיקונים</p>
         </td></tr>
-        <tr><td style="padding:32px 40px;text-align:center;">
-          <div style="font-size:52px;margin-bottom:12px;">✅</div>
-          <h2 style="color:#B85C38;margin:0 0 8px;font-size:22px;">המוצר שלך מוכן לאיסוף!</h2>
-          <p style="color:#555;margin:0 0 22px;font-size:14px;">שלום ${repair.customer_name}, התיקון הושלם ומחכה לך בחנות.</p>
-          <div style="background:#fdf6f3;border:2px solid #B85C38;border-radius:10px;padding:18px;margin-bottom:22px;">
-            <p style="color:#B85C38;font-size:13px;margin:0 0 4px;font-weight:bold;">מספר תיקון</p>
-            <p style="color:#B85C38;font-size:28px;font-weight:bold;margin:0;">${repair.repair_number}</p>
+        <tr><td class="pad" style="padding:28px 32px;text-align:center;">
+          <div class="icon" style="font-size:48px;margin-bottom:10px;">✅</div>
+          <h2 style="color:#B85C38;margin:0 0 8px;font-size:20px;">המוצר שלך מוכן לאיסוף!</h2>
+          <p style="color:#555;margin:0 0 20px;font-size:14px;line-height:1.5;">שלום ${repair.customer_name}, התיקון הושלם ומחכה לך בחנות.</p>
+          <div style="background:#fdf6f3;border:2px solid #B85C38;border-radius:10px;padding:16px;margin-bottom:18px;">
+            <p style="color:#B85C38;font-size:12px;margin:0 0 4px;font-weight:bold;">מספר תיקון</p>
+            <p class="num" style="color:#B85C38;font-size:26px;font-weight:bold;margin:0;">${repair.repair_number}</p>
           </div>
-          ${repair.model ? `<p style="color:#666;font-size:14px;margin:0 0 6px;">מוצר: <strong>${repair.model}</strong></p>` : ''}
-          ${repair.payment ? `<p style="color:#666;font-size:14px;margin:0 0 6px;">תשלום: <strong>${repair.payment}</strong></p>` : ''}
-          <p style="color:#888;font-size:13px;margin:20px 0 0;line-height:1.6;">ניתן לאסוף את המוצר בשעות פעילות החנות.<br>תודה שבחרת באריזו תכשיטים!</p>
+          ${repair.model ? `<p style="color:#666;font-size:14px;margin:0 0 5px;">מוצר: <strong>${repair.model}</strong></p>` : ''}
+          ${repair.payment ? `<p style="color:#666;font-size:14px;margin:0 0 5px;">תשלום: <strong>${repair.payment}</strong></p>` : ''}
+          <p style="color:#888;font-size:13px;margin:18px 0 0;line-height:1.7;">ניתן לאסוף את המוצר בשעות פעילות החנות.<br>תודה שבחרת באריזו תכשיטים!</p>
         </td></tr>
-        <tr><td style="background:#f9f0ec;padding:14px 40px;text-align:center;border-top:1px solid #f0e0d8;">
+        <tr><td style="background:#f9f0ec;padding:12px 32px;text-align:center;border-top:1px solid #f0e0d8;">
           <p style="color:#B85C38;font-size:12px;margin:0;">© ARIZU Jewelry — info@arizu.co.il</p>
         </td></tr>
       </table>
@@ -515,52 +538,33 @@ router.put('/:id', authenticateToken, upload.single('image'), (req, res) => {
   const updated = db.prepare('SELECT * FROM repairs WHERE id = ?').get(repair.id);
   const history = db.prepare('SELECT * FROM repair_history WHERE repair_id = ? ORDER BY changed_at DESC').all(repair.id);
 
-  // Auto-send "ready for pickup" email when status changes to 'ready'
-  if (status === 'ready' && repair.status !== 'ready' && updated.email) {
-    sendEmail({
-      to: updated.email,
-      subject: `המוצר שלך מוכן לאיסוף — אריזו תכשיטים`,
-      html: buildReadyEmailHtml(updated),
-    }).catch(err => console.error('Ready email error:', err));
-  }
-
   res.json({ ...updated, history });
 });
 
-// POST /api/repairs/:id/send-email - send status email manually
+// POST /api/repairs/:id/send-email - send email manually
 router.post('/:id/send-email', authenticateToken, async (req, res) => {
   const db = req.app.locals.db;
   const repair = db.prepare('SELECT * FROM repairs WHERE id = ?').get(req.params.id);
   if (!repair) return res.status(404).json({ error: 'תיקון לא נמצא' });
   if (!repair.email) return res.status(400).json({ error: 'אין כתובת מייל ללקוח זה' });
 
-  if (!process.env.BREVO_API_KEY) {
-    return res.status(503).json({ error: 'שירות המייל אינו מוגדר. הוסף BREVO_API_KEY לרכבת' });
-  }
+  const type = req.body?.type || 'update';
+  const isReady = type === 'ready';
+  const subject = isReady
+    ? `המוצר שלך מוכן לאיסוף — אריזו תכשיטים`
+    : `עדכון תיקון אריזו — מספר ${repair.repair_number}`;
+  const html = isReady ? buildReadyEmailHtml(repair) : buildEmailHtml(repair, db);
 
-  try {
-    await axios.post('https://api.brevo.com/v3/smtp/email', {
-      sender: { name: FROM_NAME, email: FROM_EMAIL },
-      to: [{ email: repair.email }],
-      subject: `עדכון תיקון אריזו — מספר ${repair.repair_number}`,
-      htmlContent: buildEmailHtml(repair, db),
-    }, {
-      headers: {
-        'api-key': process.env.BREVO_API_KEY,
-        'Content-Type': 'application/json',
-      },
-    });
+  const result = await sendEmail({ to: repair.email, subject, html });
+  if (!result.ok) return res.status(500).json({ error: result.error });
 
-    db.prepare(`
-      INSERT INTO repair_history (repair_id, field_name, old_value, new_value, changed_by)
-      VALUES (?, 'מייל', NULL, 'נשלח מייל עדכון ללקוח', ?)
-    `).run(repair.id, req.user.username);
+  const historyMsg = isReady ? 'נשלח מייל "מוכן לאיסוף" ללקוח' : 'נשלח מייל עדכון ללקוח';
+  db.prepare(`
+    INSERT INTO repair_history (repair_id, field_name, old_value, new_value, changed_by)
+    VALUES (?, 'מייל', NULL, ?, ?)
+  `).run(repair.id, historyMsg, req.user.username);
 
-    res.json({ success: true, message: 'המייל נשלח בהצלחה' });
-  } catch (err) {
-    console.error('Resend error:', err);
-    res.status(500).json({ error: 'שגיאה בשליחת המייל: ' + err.message });
-  }
+  res.json({ success: true, message: 'המייל נשלח בהצלחה' });
 });
 
 // DELETE /api/repairs/:id

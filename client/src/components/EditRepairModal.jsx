@@ -113,12 +113,17 @@ export default function EditRepairModal({ repair, statuses, onClose, onSaved }) 
             </div>
             <div className="col-span-2">
               <label className={labelCls}>תמונה חדשה (אופציונלי)</label>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={e => setImageFile(e.target.files[0])}
-                className="w-full text-sm text-gray-500 file:ml-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
-              />
+              <div className="flex gap-2">
+                <label className="flex-1 flex items-center justify-center gap-2 border border-gray-200 rounded-xl py-2.5 cursor-pointer hover:bg-brand-50 transition-colors text-sm text-gray-600">
+                  <span>📷</span> צלם
+                  <input type="file" accept="image/*" capture="environment" onChange={e => setImageFile(e.target.files[0])} className="hidden" />
+                </label>
+                <label className="flex-1 flex items-center justify-center gap-2 border border-gray-200 rounded-xl py-2.5 cursor-pointer hover:bg-brand-50 transition-colors text-sm text-gray-600">
+                  <span>🖼️</span> גלריה
+                  <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} className="hidden" />
+                </label>
+              </div>
+              {imageFile && <p className="text-xs text-brand-600 mt-1">✓ {imageFile.name}</p>}
               {repair.image_path && !imageFile && (
                 <p className="text-xs text-gray-400 mt-1">תמונה קיימת תישמר אם לא תבחר חדשה</p>
               )}

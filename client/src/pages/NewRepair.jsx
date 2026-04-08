@@ -255,28 +255,30 @@ export default function NewRepair() {
         {/* Section: Image */}
         <div>
           <h3 className="text-sm font-semibold text-brand-600 uppercase tracking-wide mb-3">תמונת מוצר</h3>
-          <label className="flex flex-col items-center gap-3 border-2 border-dashed border-gray-200 rounded-xl p-5 cursor-pointer hover:border-brand-300 hover:bg-brand-50/30 transition-colors">
-            {imagePreview ? (
-              <img src={imagePreview} alt="תצוגה מקדימה" className="max-h-40 rounded-xl object-contain" />
-            ) : (
-              <>
-                <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span className="text-sm text-gray-400">לחץ להעלאת תמונה</span>
-                <span className="text-xs text-gray-300">JPG, PNG, WEBP עד 5MB</span>
-              </>
-            )}
-            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImage} className="hidden" />
-          </label>
-          {imageFile && (
-            <button
-              type="button"
-              onClick={() => { setImageFile(null); setImagePreview(null); }}
-              className="text-xs text-red-400 hover:text-red-600 mt-2"
-            >
-              הסר תמונה
-            </button>
+          {imagePreview ? (
+            <div className="flex flex-col items-center gap-2">
+              <img src={imagePreview} alt="תצוגה מקדימה" className="max-h-40 rounded-xl object-contain border border-gray-200" />
+              <button
+                type="button"
+                onClick={() => { setImageFile(null); setImagePreview(null); }}
+                className="text-xs text-red-400 hover:text-red-600"
+              >
+                הסר תמונה
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <label className="flex-1 flex flex-col items-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-4 cursor-pointer hover:border-brand-300 hover:bg-brand-50/30 transition-colors text-center">
+                <span className="text-2xl">📷</span>
+                <span className="text-xs text-gray-500">צלם תמונה</span>
+                <input type="file" accept="image/*" capture="environment" onChange={handleImage} className="hidden" />
+              </label>
+              <label className="flex-1 flex flex-col items-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-4 cursor-pointer hover:border-brand-300 hover:bg-brand-50/30 transition-colors text-center">
+                <span className="text-2xl">🖼️</span>
+                <span className="text-xs text-gray-500">בחר מגלריה</span>
+                <input type="file" accept="image/*" onChange={handleImage} className="hidden" />
+              </label>
+            </div>
           )}
         </div>
 

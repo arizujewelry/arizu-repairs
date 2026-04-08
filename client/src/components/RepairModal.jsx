@@ -32,11 +32,11 @@ export default function RepairModal({ repair, statuses, onClose, onUpdated }) {
 
   const statusObj = statuses?.find(s => s.key === repair.status);
 
-  const handleSendEmail = async () => {
-    setSending(true);
+  const handleSendEmail = async (type) => {
+    setSending(type);
     setEmailMsg('');
     try {
-      const r = await api.post(`/repairs/${repair.id}/send-email`);
+      const r = await api.post(`/repairs/${repair.id}/send-email`, { type });
       setEmailMsg('✅ ' + r.data.message);
       if (onUpdated) onUpdated();
     } catch (err) {
@@ -142,16 +142,23 @@ export default function RepairModal({ repair, statuses, onClose, onUpdated }) {
 
         {/* Footer */}
         {repair.email && (
-          <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl">
+          <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl space-y-2">
             {emailMsg && (
-              <p className="text-sm mb-2 text-center font-medium">{emailMsg}</p>
+              <p className="text-sm mb-1 text-center font-medium">{emailMsg}</p>
             )}
             <button
-              onClick={handleSendEmail}
-              disabled={sending}
+              onClick={() => handleSendEmail('ready')}
+              disabled={!!sending}
               className="w-full py-3 rounded-xl bg-brand-500 text-white font-medium text-sm hover:bg-brand-600 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {sending ? 'שולח...' : '📧 שלח מייל עדכון ללקוח'}
+              {sending === 'ready' ? 'שולח...' : '✅ שלח מייל "מוכן לאיסוף"'}
+            </button>
+            <button
+              onClick={() => handleSendEmail('update')}
+              disabled={!!sending}
+              className="w-full py-3 rounded-xl border border-brand-300 text-brand-600 font-medium text-sm hover:bg-brand-50 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {sending === 'update' ? 'שולח...' : '📧 שלח מייל עדכון סטטוס'}
             </button>
           </div>
         )}
