@@ -255,34 +255,23 @@ function buildEmailHtml(repair, db) {
 // GET /api/repairs - list with filters
 router.get('/', authenticateToken, (req, res) => {
   const db = req.app.locals.db;
+  const bizId = req.user.business_id || 1;
   const { search, status, date_from, date_to, payment, page = 1, limit = 50 } = req.query;
 
-  let where = [];
-  let params = [];
+  let where = ['business_id = ?'];
+  let params = [bizId];
 
   if (search) {
     where.push('(customer_name LIKE ? OR repair_number LIKE ? OR phone LIKE ? OR model LIKE ?)');
     const s = `%${search}%`;
     params.push(s, s, s, s);
   }
-  if (status) {
-    where.push('status = ?');
-    params.push(status);
-  }
-  if (date_from) {
-    where.push('received_date >= ?');
-    params.push(date_from);
-  }
-  if (date_to) {
-    where.push('received_date <= ?');
-    params.push(date_to);
-  }
-  if (payment) {
-    where.push('payment LIKE ?');
-    params.push(`%${payment}%`);
-  }
+  if (status) { where.push('status = ?'); params.push(status); }
+  if (date_from) { where.push('received_date >= ?'); params.push(date_from); }
+  if (date_to) { where.push('received_date <= ?'); params.push(date_to); }
+  if (payment) { where.push('payment LIKE ?'); params.push(`%${payment}%`); }
 
-  const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
+  const whereClause = 'WHERE ' + where.join(' AND ');
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   const total = db.prepare(`SELECT COUNT(*) as count FROM repairs ${whereClause}`).get(...params);
@@ -296,10 +285,11 @@ router.get('/', authenticateToken, (req, res) => {
 // GET /api/repairs/export - export to Excel
 router.get('/export', authenticateToken, (req, res) => {
   const db = req.app.locals.db;
+  const bizId = req.user.business_id || 1;
   const { status, date_from, date_to, search } = req.query;
 
-  let where = [];
-  let params = [];
+  let where = ['business_id = ?'];
+  let params = [bizId];
 
   if (search) {
     where.push('(customer_name LIKE ? OR repair_number LIKE ? OR phone LIKE ? OR model LIKE ?)');
@@ -310,17 +300,11 @@ router.get('/export', authenticateToken, (req, res) => {
   if (date_from) { where.push('received_date >= ?'); params.push(date_from); }
   if (date_to) { where.push('received_date <= ?'); params.push(date_to); }
 
-  const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
+  const whereClause = 'WHERE ' + where.join(' AND ');
   const repairs = db.prepare(`SELECT * FROM repairs ${whereClause} ORDER BY repair_number ASC`).all(...params);
 
-  const statusLabels = {
-    pending: 'ממתין לטיפול',
-    in_progress: 'בטיפול',
-    waiting_parts: 'ממתין לחלקים',
-    ready: 'מוכן לאיסוף',
-    collected: 'נאסף',
-  };
-  const customStatuses = db.prepare('SELECT key, label FROM custom_statuses').all();
+  const statusLabels = { pending: 'ממתין לטיפול', in_progress: 'בטיפול', waiting_parts: 'ממתין לחלקים', ready: 'מוכן לאיסוף', collected: 'נאסף' };
+  const customStatuses = db.prepare('SELECT key, label FROM custom_statuses WHERE business_id = ?').all(bizId);
   customStatuses.forEach(cs => { statusLabels[cs.key] = cs.label; });
 
   const data = repairs.map(r => ({
@@ -359,17 +343,15 @@ router.get('/export', authenticateToken, (req, res) => {
 // GET /api/repairs/stats - dashboard statistics
 router.get('/stats', authenticateToken, (req, res) => {
   const db = req.app.locals.db;
+  const bizId = req.user.business_id || 1;
 
-  const total = db.prepare("SELECT COUNT(*) as c FROM repairs WHERE status != 'collected'").get().c;
-  const pending = db.prepare("SELECT COUNT(*) as c FROM repairs WHERE status = 'pending'").get().c;
-  const ready = db.prepare("SELECT COUNT(*) as c FROM repairs WHERE status = 'ready'").get().c;
-  const inProgress = db.prepare("SELECT COUNT(*) as c FROM repairs WHERE status = 'in_progress'").get().c;
-  const waitingParts = db.prepare("SELECT COUNT(*) as c FROM repairs WHERE status = 'waiting_parts'").get().c;
+  const total      = db.prepare("SELECT COUNT(*) as c FROM repairs WHERE status != 'collected' AND business_id = ?").get(bizId).c;
+  const pending    = db.prepare("SELECT COUNT(*) as c FROM repairs WHERE status = 'pending' AND business_id = ?").get(bizId).c;
+  const ready      = db.prepare("SELECT COUNT(*) as c FROM repairs WHERE status = 'ready' AND business_id = ?").get(bizId).c;
+  const inProgress = db.prepare("SELECT COUNT(*) as c FROM repairs WHERE status = 'in_progress' AND business_id = ?").get(bizId).c;
+  const waitingParts = db.prepare("SELECT COUNT(*) as c FROM repairs WHERE status = 'waiting_parts' AND business_id = ?").get(bizId).c;
 
-  // Count by all statuses
-  const byStatus = db.prepare(`
-    SELECT status, COUNT(*) as count FROM repairs GROUP BY status
-  `).all();
+  const byStatus = db.prepare(`SELECT status, COUNT(*) as count FROM repairs WHERE business_id = ? GROUP BY status`).all(bizId);
 
   res.json({
     total_open: total,
@@ -384,7 +366,8 @@ router.get('/stats', authenticateToken, (req, res) => {
 // GET /api/repairs/:id
 router.get('/:id', authenticateToken, (req, res) => {
   const db = req.app.locals.db;
-  const repair = db.prepare('SELECT * FROM repairs WHERE id = ?').get(req.params.id);
+  const bizId = req.user.business_id || 1;
+  const repair = db.prepare('SELECT * FROM repairs WHERE id = ? AND business_id = ?').get(req.params.id, bizId);
   if (!repair) return res.status(404).json({ error: 'תיקון לא נמצא' });
 
   const history = db.prepare(
@@ -407,10 +390,12 @@ router.post('/', authenticateToken, upload.single('image'), async (req, res) => 
     return res.status(400).json({ error: 'שם לקוח הוא שדה חובה' });
   }
 
-  // Generate repair number
-  const counter = db.prepare('UPDATE repair_counter SET last_number = last_number + 1 WHERE id = 1').run();
-  const { last_number } = db.prepare('SELECT last_number FROM repair_counter WHERE id = 1').get();
-  const repair_number = `ARZ-${last_number}`;
+  const bizId = req.user.business_id || 1;
+
+  // Generate repair number per business (atomic)
+  db.prepare('UPDATE businesses SET repair_counter = repair_counter + 1 WHERE id = ?').run(bizId);
+  const { repair_counter } = db.prepare('SELECT repair_counter FROM businesses WHERE id = ?').get(bizId);
+  const repair_number = `ARZ-${repair_counter}`;
 
   const image_path = req.file ? `/uploads/${req.file.filename}` : null;
   const today = new Date().toISOString().split('T')[0];
@@ -418,8 +403,8 @@ router.post('/', authenticateToken, upload.single('image'), async (req, res) => 
   try {
     const stmt = db.prepare(`
       INSERT INTO repairs (repair_number, customer_name, phone, email, received_date, intake_date, model,
-        purchase_place, fault_description, payment, image_path, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+        purchase_place, fault_description, payment, image_path, status, business_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
     `);
 
     const result = stmt.run(
@@ -433,7 +418,8 @@ router.post('/', authenticateToken, upload.single('image'), async (req, res) => 
       purchase_place || null,
       fault_description || null,
       payment || null,
-      image_path
+      image_path,
+      bizId
     );
 
     const repair = db.prepare('SELECT * FROM repairs WHERE id = ?').get(result.lastInsertRowid);
@@ -468,7 +454,8 @@ router.post('/', authenticateToken, upload.single('image'), async (req, res) => 
 // PUT /api/repairs/:id - update repair
 router.put('/:id', authenticateToken, upload.single('image'), (req, res) => {
   const db = req.app.locals.db;
-  const repair = db.prepare('SELECT * FROM repairs WHERE id = ?').get(req.params.id);
+  const bizId = req.user.business_id || 1;
+  const repair = db.prepare('SELECT * FROM repairs WHERE id = ? AND business_id = ?').get(req.params.id, bizId);
   if (!repair) return res.status(404).json({ error: 'תיקון לא נמצא' });
 
   const {
@@ -570,7 +557,8 @@ router.post('/:id/send-email', authenticateToken, async (req, res) => {
 // DELETE /api/repairs/:id
 router.delete('/:id', authenticateToken, (req, res) => {
   const db = req.app.locals.db;
-  const repair = db.prepare('SELECT * FROM repairs WHERE id = ?').get(req.params.id);
+  const bizId = req.user.business_id || 1;
+  const repair = db.prepare('SELECT * FROM repairs WHERE id = ? AND business_id = ?').get(req.params.id, bizId);
   if (!repair) return res.status(404).json({ error: 'תיקון לא נמצא' });
 
   if (repair.image_path) {

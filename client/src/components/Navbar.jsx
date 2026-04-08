@@ -8,11 +8,17 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const links = [
-    { to: '/new',       label: 'תיקון חדש',   icon: '➕' },
-    { to: '/repairs',   label: 'תיקונים',      icon: '🔧' },
-    { to: '/dashboard', label: 'דשבורד',       icon: '📊' },
-    { to: '/statuses',  label: 'ניהול סטטוסים', icon: '⚙️' },
+  const isSuperadmin = user?.role === 'superadmin';
+  const isAdmin = user?.role === 'admin' || isSuperadmin;
+
+  const links = isSuperadmin ? [
+    { to: '/settings', label: 'ניהול עסקים', icon: '🏢' },
+  ] : [
+    { to: '/new',       label: 'תיקון חדש',    icon: '➕' },
+    { to: '/repairs',   label: 'תיקונים',       icon: '🔧' },
+    { to: '/dashboard', label: 'דשבורד',        icon: '📊' },
+    { to: '/statuses',  label: 'סטטוסים',       icon: '⚙️' },
+    ...(isAdmin ? [{ to: '/settings', label: 'הגדרות', icon: '👥' }] : []),
   ];
 
   const isActive = (to) => location.pathname === to;
@@ -56,9 +62,10 @@ export default function Navbar() {
 
           {/* User + logout (desktop) */}
           <div className="hidden md:flex items-center gap-3">
-            <span className="text-sm text-gray-500">
-              שלום, <span className="font-medium text-brand-600">{user?.display_name || user?.username}</span>
-            </span>
+            <div className="text-right">
+              <p className="text-sm font-medium text-brand-600">{user?.display_name || user?.username}</p>
+              {user?.business_name && <p className="text-xs text-gray-400">{user.business_name}</p>}
+            </div>
             <button
               onClick={handleLogout}
               className="text-sm text-gray-400 hover:text-red-500 transition-colors px-2 py-1 rounded"
@@ -89,8 +96,9 @@ export default function Navbar() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden bg-white border-t border-brand-100 px-3 pb-3 fade-in">
-          <div className="text-sm text-gray-500 py-2 border-b border-gray-100 mb-2">
-            שלום, <span className="font-medium text-brand-600">{user?.display_name || user?.username}</span>
+          <div className="py-2 border-b border-gray-100 mb-2">
+            <p className="text-sm font-medium text-brand-600">{user?.display_name || user?.username}</p>
+            {user?.business_name && <p className="text-xs text-gray-400">{user.business_name}</p>}
           </div>
           {links.map(link => (
             <Link
