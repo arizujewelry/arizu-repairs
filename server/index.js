@@ -5,43 +5,29 @@ const path = require('path');
 const Database = require('better-sqlite3');
 const fs = require('fs');
 
-process.on('uncaughtException', (err) => {
-  console.error('UNCAUGHT EXCEPTION:', err.message, err.stack);
-  process.exit(1);
-});
-process.on('unhandledRejection', (reason) => {
-  console.error('UNHANDLED REJECTION:', reason);
-});
-
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
+// Ensure directories exist
+// dataDir is mounted as a Railway Volume — persists across deployments
 const dataDir = path.join(__dirname, 'data');
-const uploadsDir = path.join(dataDir, 'uploads');
+const uploadsDir = path.join(dataDir, 'uploads'); // inside the volume
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
+// Database setup
 const db = new Database(path.join(dataDir, 'repairs.db'));
+
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
-try { db.exec(`
-  CREATE TABLE IF NOT EXISTS businesses (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    repair_counter INTEGER DEFAULT 1000,
-    created_at TEXT DEFAULT (datetime('now','localtime'))
-  );
-
-  INSERT OR IGNORE INTO businesses (id, name) VALUES (1, 'אריזו תכשיטים');
-
+db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'employee',
-    display_name TEXT,
-    business_id INTEGER
+    display_name TEXT
   );
 
   CREATE TABLE IF NOT EXISTS custom_statuses (
@@ -50,13 +36,12 @@ try { db.exec(`
     label TEXT NOT NULL,
     color TEXT DEFAULT '#6B7280',
     is_supplier INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT (datetime('now','localtime')),
-    business_id INTEGER DEFAULT 1
+    created_at TEXT DEFAULT (datetime('now','localtime'))
   );
 
   CREATE TABLE IF NOT EXISTS repairs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    repair_number TEXT NOT NULL,
+    repair_number TEXT UNIQUE NOT NULL,
     customer_name TEXT NOT NULL,
     phone TEXT,
     email TEXT,
@@ -68,8 +53,7 @@ try { db.exec(`
     image_path TEXT,
     status TEXT DEFAULT 'pending',
     created_at TEXT DEFAULT (datetime('now','localtime')),
-    updated_at TEXT DEFAULT (datetime('now','localtime')),
-    business_id INTEGER DEFAULT 1
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
   );
 
   CREATE TABLE IF NOT EXISTS repair_history (
@@ -89,68 +73,68 @@ try { db.exec(`
   );
 
   INSERT OR IGNORE INTO repair_counter (id, last_number) VALUES (1, 1000);
-`); } catch(e) { console.error('DB INIT ERROR:', e.message); process.exit(1); }
+`);
 
-// Migrations
+// Migrations — add new columns if not exist
 const migrations = [
   `ALTER TABLE repairs ADD COLUMN intake_date TEXT`,
-  `ALTER TABLE repairs ADD COLUMN business_id INTEGER DEFAULT 1`,
-  `ALTER TABLE users ADD COLUMN business_id INTEGER DEFAULT 1`,
-  `ALTER TABLE custom_statuses ADD COLUMN business_id INTEGER DEFAULT 1`,
-  `ALTER TABLE businesses ADD COLUMN repair_counter INTEGER DEFAULT 1000`,
 ];
 for (const sql of migrations) {
-  try { db.exec(sql); console.log('Migration OK:', sql.substring(0, 60)); } catch(e) { console.log('Migration skip:', e.message.substring(0, 80)); }
+  try { db.exec(sql); } catch(e) { /* column already exists */ }
 }
 
-// Sync repair_counter from old table into businesses for business 1
-try {
-  const old = db.prepare('SELECT last_number FROM repair_counter WHERE id = 1').get();
-  if (old) db.prepare('UPDATE businesses SET repair_counter = ? WHERE id = 1 AND repair_counter < ?').run(old.last_number, old.last_number);
-} catch(e) {}
-
+// Auto-seed: create default users if none exist
 function autoSeed() {
   const bcrypt = require('bcryptjs');
-
-  // Default business users (business_id=1)
-  const regularCount = db.prepare("SELECT COUNT(*) as c FROM users WHERE business_id = 1").get().c;
-  if (regularCount === 0) {
-    const ins = db.prepare('INSERT OR IGNORE INTO users (username, password, role, display_name, business_id) VALUES (?, ?, ?, ?, ?)');
-    ins.run('employee', bcrypt.hashSync('arizu123', 10),   'employee', 'עובד חנות', 1);
-    ins.run('admin',    bcrypt.hashSync('arizuadmin', 10), 'admin',    'מנהל',      1);
+  const count = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
+  if (count === 0) {
+    const users = [
+      { username: 'employee', password: 'arizu123',   role: 'employee', display_name: 'עובד חנות' },
+      { username: 'admin',    password: 'arizuadmin', role: 'admin',    display_name: 'מנהל' },
+    ];
+    const insert = db.prepare('INSERT OR IGNORE INTO users (username, password, role, display_name) VALUES (?, ?, ?, ?)');
+    for (const u of users) {
+      insert.run(u.username, bcrypt.hashSync(u.password, 10), u.role, u.display_name);
+    }
     console.log('✅ משתמשי ברירת מחדל נוצרו אוטומטית');
   }
-
-  // Superadmin (no business)
-  const superExists = db.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'superadmin'").get().c;
-  if (!superExists) {
-    const bcrypt = require('bcryptjs');
-    db.prepare('INSERT OR IGNORE INTO users (username, password, role, display_name, business_id) VALUES (?, ?, ?, ?, NULL)')
-      .run('superadmin', bcrypt.hashSync('superadmin123', 10), 'superadmin', 'מנהל ראשי');
-    console.log('✅ superadmin נוצר (superadmin / superadmin123)');
-  }
 }
-try { autoSeed(); } catch(e) { console.error('AUTOSEED ERROR:', e.message, e.stack); }
+autoSeed();
 
+// Make db available to routes
 app.locals.db = db;
 
-app.use(cors({ origin: () => true, credentials: true }));
+// Middleware
+const allowedOrigins = [
+  process.env.CLIENT_URL || 'http://localhost:5173',
+  'http://localhost:4173',
+];
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(null, true); // allow all in prod
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(uploadsDir)); // serves /app/server/data/uploads
 
-const authRoutes       = require('./routes/auth');
-const repairsRoutes    = require('./routes/repairs');
-const statusesRoutes   = require('./routes/statuses');
-const businessesRoutes = require('./routes/businesses');
+// Routes
+const authRoutes = require('./routes/auth');
+const repairsRoutes = require('./routes/repairs');
+const statusesRoutes = require('./routes/statuses');
 
-app.use('/api/auth',       authRoutes);
-app.use('/api/repairs',    repairsRoutes);
-app.use('/api/statuses',   statusesRoutes);
-app.use('/api/businesses', businessesRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/repairs', repairsRoutes);
+app.use('/api/statuses', statusesRoutes);
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Arizu Jewelry Server is running' });
+});
 
+// In production: serve the built React app
+// Try multiple possible paths for the client build
 const possibleClientPaths = [
   path.join(__dirname, '..', 'client', 'dist'),
   path.join(process.cwd(), 'client', 'dist'),
@@ -159,22 +143,31 @@ const possibleClientPaths = [
 
 let clientBuild = null;
 for (const p of possibleClientPaths) {
-  if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) { clientBuild = p; break; }
+  if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
+    clientBuild = p;
+    break;
+  }
 }
 
 if (clientBuild) {
   console.log(`✅ Serving React app from: ${clientBuild}`);
   app.use(express.static(clientBuild));
   app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads'))
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
       res.sendFile(path.join(clientBuild, 'index.html'));
+    }
   });
 } else {
-  console.log('⚠️  React build not found.');
+  console.log('⚠️  React build not found. Searched:', possibleClientPaths);
+  app.get('/', (req, res) => {
+    res.json({ status: 'ok', message: 'API is running. React build not found.' });
+  });
 }
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🏪 Arizu Jewelry Server running on port ${PORT}`);
   console.log(`📦 Database: ${path.join(dataDir, 'repairs.db')}`);
-  console.log(`🌐 Client build: ${clientBuild || 'NOT FOUND'}\n`);
+  console.log(`🖼️  Uploads: ${uploadsDir}`);
+  console.log(`🌐 Client build: ${clientBuild || 'NOT FOUND'}`);
+  console.log('');
 });
