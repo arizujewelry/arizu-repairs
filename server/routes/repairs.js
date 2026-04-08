@@ -3,19 +3,12 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const Brevo = require('@getbrevo/brevo');
+const axios = require('axios');
 const { authenticateToken } = require('../middleware/auth');
 const XLSX = require('xlsx');
 
 const FROM_EMAIL = process.env.FROM_EMAIL || 'info@arizu.co.il';
 const FROM_NAME  = process.env.FROM_NAME  || 'אריזו תכשיטים';
-
-function getBrevoApi() {
-  if (!process.env.BREVO_API_KEY) return null;
-  const client = Brevo.ApiClient.instance;
-  client.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
-  return new Brevo.TransactionalEmailsApi();
-}
 
 // Multer config
 const storage = multer.diskStorage({
@@ -65,19 +58,23 @@ function statusLabel(status, db) {
 }
 
 async function sendEmail({ to, subject, html }) {
-  const api = getBrevoApi();
-  if (!api) return { ok: false, error: 'מפתח Brevo לא מוגדר בשרת' };
+  if (!process.env.BREVO_API_KEY) return { ok: false, error: 'מפתח Brevo לא מוגדר בשרת' };
   try {
-    const email = new Brevo.SendSmtpEmail();
-    email.subject = subject;
-    email.htmlContent = html;
-    email.sender = { name: FROM_NAME, email: FROM_EMAIL };
-    email.to = [{ email: to }];
-    await api.sendTransacEmail(email);
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: { name: FROM_NAME, email: FROM_EMAIL },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }, {
+      headers: {
+        'api-key': process.env.BREVO_API_KEY,
+        'Content-Type': 'application/json',
+      },
+    });
     return { ok: true };
   } catch (err) {
-    console.error('Email error:', err.message);
-    return { ok: false, error: err.message };
+    console.error('Email error:', err.response?.data || err.message);
+    return { ok: false, error: err.response?.data?.message || err.message };
   }
 }
 
@@ -537,18 +534,22 @@ router.post('/:id/send-email', authenticateToken, async (req, res) => {
   if (!repair) return res.status(404).json({ error: 'תיקון לא נמצא' });
   if (!repair.email) return res.status(400).json({ error: 'אין כתובת מייל ללקוח זה' });
 
-  const api = getBrevoApi();
-  if (!api) {
+  if (!process.env.BREVO_API_KEY) {
     return res.status(503).json({ error: 'שירות המייל אינו מוגדר. הוסף BREVO_API_KEY לרכבת' });
   }
 
   try {
-    const email = new Brevo.SendSmtpEmail();
-    email.subject = `עדכון תיקון אריזו — מספר ${repair.repair_number}`;
-    email.htmlContent = buildEmailHtml(repair, db);
-    email.sender = { name: FROM_NAME, email: FROM_EMAIL };
-    email.to = [{ email: repair.email }];
-    await api.sendTransacEmail(email);
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: { name: FROM_NAME, email: FROM_EMAIL },
+      to: [{ email: repair.email }],
+      subject: `עדכון תיקון אריזו — מספר ${repair.repair_number}`,
+      htmlContent: buildEmailHtml(repair, db),
+    }, {
+      headers: {
+        'api-key': process.env.BREVO_API_KEY,
+        'Content-Type': 'application/json',
+      },
+    });
 
     db.prepare(`
       INSERT INTO repair_history (repair_id, field_name, old_value, new_value, changed_by)
