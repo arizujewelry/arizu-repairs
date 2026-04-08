@@ -100,7 +100,7 @@ const migrations = [
   `ALTER TABLE businesses ADD COLUMN repair_counter INTEGER DEFAULT 1000`,
 ];
 for (const sql of migrations) {
-  try { db.exec(sql); } catch(e) {}
+  try { db.exec(sql); console.log('Migration OK:', sql.substring(0, 60)); } catch(e) { console.log('Migration skip:', e.message.substring(0, 80)); }
 }
 
 // Sync repair_counter from old table into businesses for business 1
@@ -130,7 +130,7 @@ function autoSeed() {
     console.log('✅ superadmin נוצר (superadmin / superadmin123)');
   }
 }
-autoSeed();
+try { autoSeed(); } catch(e) { console.error('AUTOSEED ERROR:', e.message, e.stack); }
 
 app.locals.db = db;
 
