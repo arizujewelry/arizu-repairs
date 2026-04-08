@@ -531,7 +531,8 @@ router.put('/:id', authenticateToken, upload.single('image'), (req, res) => {
 // POST /api/repairs/:id/send-email - send email manually
 router.post('/:id/send-email', authenticateToken, async (req, res) => {
   const db = req.app.locals.db;
-  const repair = db.prepare('SELECT * FROM repairs WHERE id = ?').get(req.params.id);
+  const bizId = req.user.business_id || 1;
+  const repair = db.prepare('SELECT * FROM repairs WHERE id = ? AND business_id = ?').get(req.params.id, bizId);
   if (!repair) return res.status(404).json({ error: 'תיקון לא נמצא' });
   if (!repair.email) return res.status(400).json({ error: 'אין כתובת מייל ללקוח זה' });
 
