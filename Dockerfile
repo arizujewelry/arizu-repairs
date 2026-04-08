@@ -19,6 +19,6 @@ COPY server/ ./server/
 # Create persistent directories
 RUN mkdir -p server/data server/uploads
 
-EXPOSE 3001
+EXPOSE 3000
 
 CMD ["node", "server/index.js"]

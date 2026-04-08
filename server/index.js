@@ -5,8 +5,16 @@ const path = require('path');
 const Database = require('better-sqlite3');
 const fs = require('fs');
 
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err.message, err.stack);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('UNHANDLED REJECTION:', reason);
+});
+
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 const dataDir = path.join(__dirname, 'data');
 const uploadsDir = path.join(dataDir, 'uploads');
@@ -17,7 +25,7 @@ const db = new Database(path.join(dataDir, 'repairs.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
-db.exec(`
+try { db.exec(`
   CREATE TABLE IF NOT EXISTS businesses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -81,7 +89,7 @@ db.exec(`
   );
 
   INSERT OR IGNORE INTO repair_counter (id, last_number) VALUES (1, 1000);
-`);
+`); } catch(e) { console.error('DB INIT ERROR:', e.message); process.exit(1); }
 
 // Migrations
 const migrations = [
