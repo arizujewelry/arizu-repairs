@@ -7,7 +7,6 @@ import NewRepair from './pages/NewRepair';
 import RepairsList from './pages/RepairsList';
 import Dashboard from './pages/Dashboard';
 import StatusManager from './pages/StatusManager';
-import Settings from './pages/Settings';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -35,40 +34,36 @@ function Layout({ children }) {
 
 function AppRoutes() {
   const { user } = useAuth();
-  const isSuperadmin = user?.role === 'superadmin';
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to={isSuperadmin ? '/settings' : '/repairs'} replace /> : <Login />} />
+      <Route path="/login" element={user ? <Navigate to="/repairs" replace /> : <Login />} />
 
-      {/* Superadmin: only settings */}
-      <Route path="/settings" element={
-        <PrivateRoute><Layout><Settings /></Layout></PrivateRoute>
-      } />
-
-      {/* Regular users */}
       <Route path="/repairs" element={
         <PrivateRoute>
-          {isSuperadmin ? <Navigate to="/settings" replace /> : <Layout><RepairsList /></Layout>}
-        </PrivateRoute>
-      } />
-      <Route path="/new" element={
-        <PrivateRoute>
-          {isSuperadmin ? <Navigate to="/settings" replace /> : <Layout><NewRepair /></Layout>}
-        </PrivateRoute>
-      } />
-      <Route path="/dashboard" element={
-        <PrivateRoute>
-          {isSuperadmin ? <Navigate to="/settings" replace /> : <Layout><Dashboard /></Layout>}
-        </PrivateRoute>
-      } />
-      <Route path="/statuses" element={
-        <PrivateRoute>
-          {isSuperadmin ? <Navigate to="/settings" replace /> : <Layout><StatusManager /></Layout>}
+          <Layout><RepairsList /></Layout>
         </PrivateRoute>
       } />
 
-      <Route path="*" element={<Navigate to={user ? (isSuperadmin ? '/settings' : '/repairs') : '/login'} replace />} />
+      <Route path="/new" element={
+        <PrivateRoute>
+          <Layout><NewRepair /></Layout>
+        </PrivateRoute>
+      } />
+
+      <Route path="/dashboard" element={
+        <PrivateRoute>
+          <Layout><Dashboard /></Layout>
+        </PrivateRoute>
+      } />
+
+      <Route path="/statuses" element={
+        <PrivateRoute>
+          <Layout><StatusManager /></Layout>
+        </PrivateRoute>
+      } />
+
+      <Route path="*" element={<Navigate to="/repairs" replace />} />
     </Routes>
   );
 }
